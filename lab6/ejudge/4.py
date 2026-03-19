@@ -1,0 +1,5 @@
+n=int(input())
+num1=list(map(int, input().split()))
+num2=list(map(int, input().split()))
+dot = sum(x * y for x, y in zip(num1, num2))
+print(dot)
