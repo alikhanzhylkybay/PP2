@@ -1,16 +1,12 @@
 import psycopg2
+from config import params
 
-conn = psycopg2.connect(
-    dbname="suppliers",
-    user="postgres",
-    password="12345678",
-    host="localhost",
-    port="5432"
-)
-
-cur = conn.cursor()
-cur.execute("SELECT version();")
-print(cur.fetchone())
-
-cur.close()
-conn.close()
+def connect():
+    """ Connect to the PostgreSQL database server """
+    conn = None
+    try:
+        conn = psycopg2.connect(**params)
+        return conn
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(f"Error: {error}")
+        return None

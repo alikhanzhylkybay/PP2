@@ -1,8 +1,8 @@
-# config.py
+# Database connection parameters
 params = {
-    "host": "127.0.0.1",
+    "host": "localhost",
     "database": "suppliers",
     "user": "postgres",
-    "password": "12345678", 
+    "password": "12345678",
     "port": "5432"
 }

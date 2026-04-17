@@ -1,125 +1,45 @@
-import os
-import csv
 from connect import connect
 
-
-def insert_contact(name, phone):
+def run_phonebook():
     conn = connect()
+    if conn is None:
+        return
+    
     cur = conn.cursor()
 
-    cur.execute(
-        "INSERT INTO contacts (name, phone) VALUES (%s, %s)",
-        (name, phone)
-    )
+    try:
+        # Example 1: Calling a Procedure (Upsert)
+        print("Adding/Updating 'Alice'...")
+        cur.execute("CALL upsert_contact(%s, %s)", ("Alice Smith", "1234567890"))
 
-    conn.commit()
-    cur.close()
-    conn.close()
-    print("Contact added successfully!")
+        # Example 2: Bulk Insert with logic
+        names = ["Bob", "Charlie", "InvalidUser"]
+        phones = ["9876543210", "5551234567", "abc-wrong"]
+        print("Running bulk insert...")
+        cur.execute("CALL bulk_insert_contacts(%s, %s, %s)", (names, phones, []))
+        errors = cur.fetchone()[0]
+        if errors:
+            print(f"Skipped records: {errors}")
 
+        # Example 3: Calling a Function (Search)
+        print("\nSearching for 'Alice':")
+        cur.execute("SELECT * FROM search_contacts(%s)", ("Alice",))
+        for row in cur.fetchall():
+            print(row)
 
-def get_contacts():
-    conn = connect()
-    cur = conn.cursor()
+        # Example 4: Pagination
+        print("\nPage 1 (Limit 2):")
+        cur.execute("SELECT * FROM get_contacts_paginated(%s, %s)", (2, 0))
+        for row in cur.fetchall():
+            print(row)
 
-    cur.execute("SELECT * FROM contacts")
-    rows = cur.fetchall()
+        conn.commit()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        conn.rollback()
+    finally:
+        cur.close()
+        conn.close()
 
-    if rows:
-        for row in rows:
-            print(row)  
-    else:
-        print("No contacts found.")
-
-    cur.close()
-    conn.close()
-
-
-def update_contact(name, new_phone):
-    conn = connect()
-    cur = conn.cursor()
-
-    cur.execute(
-        "UPDATE contacts SET phone=%s WHERE name=%s",
-        (new_phone, name)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-    print("Contact updated successfully!")
-
-
-def delete_contact(name):
-    conn = connect()
-    cur = conn.cursor()
-
-    cur.execute(
-        "DELETE FROM contacts WHERE name=%s",
-        (name,)
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-    print("Contact deleted successfully!")
-
-
-def import_from_csv():
-    conn = connect()
-    cur = conn.cursor()
-
-    file_path = os.path.join(os.path.dirname(__file__), "contacts.csv")
-
-    with open(file_path, "r", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        next(reader)
-
-        for row in reader:
-            cur.execute(
-                "INSERT INTO contacts (name, phone) VALUES (%s, %s)",
-                (row[0], row[1])
-            )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-    print("Contacts imported successfully!")
-
-
-while True:
-    print("\n1. Add contact")
-    print("2. Show contacts")
-    print("3. Update contact")
-    print("4. Delete contact")
-    print("5. Exit")
-    print("6. Import from CSV")
-
-    choice = input("Choose: ")
-
-    if choice == "1":
-        name = input("Name: ")
-        phone = input("Phone: ")
-        insert_contact(name, phone)
-
-    elif choice == "2":
-        get_contacts()
-
-    elif choice == "3":
-        name = input("Name: ")
-        phone = input("New phone: ")
-        update_contact(name, phone)
-
-    elif choice == "4":
-        name = input("Name: ")
-        delete_contact(name)
-
-    elif choice == "5":
-        print("Goodbye!")
-        break
-
-    elif choice == "6":
-        import_from_csv()
-
-    else:
-        print("Invalid choice. Try again.")
+if __name__ == "__main__":
+    run_phonebook()
